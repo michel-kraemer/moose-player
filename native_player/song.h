@@ -1,6 +1,8 @@
 #ifndef SONG_H
 #define SONG_H
 
+#include <string>
+
 extern "C" {
 #include <libavutil/opt.h>
 #include <libavformat/avformat.h>
@@ -9,6 +11,8 @@ extern "C" {
 
 class Song {
 private:
+  std::string _path;
+
   int _destChannels;
   int _destSampleRate;
   int _streamIndex;
@@ -36,6 +40,7 @@ public:
   int EnsureBytes(int n);
   const char *GetBuffer();
   void DidRead(int n);
+  const std::string &GetPath();
 };
 
 #endif

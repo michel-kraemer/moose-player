@@ -37,7 +37,7 @@ void NativePlayer::AudioCallback(void *udata, Uint8 *stream, int len) {
 
       // remove gaps between songs (remove at most 250ms)
       int truncated_silence = 0;
-      while (pos > sizeof(short) && truncated_silence < player->_sampleRate * player->_channels / 4) {
+      while (pos > (int)sizeof(short) && truncated_silence < player->_sampleRate * player->_channels / 4) {
         bool silent = true;
         for (int i = 0; i < player->_channels; ++i) {
           if (*((short *)(stream + pos - 1)) > 0) {
@@ -163,6 +163,25 @@ void NativePlayer::Queue(const Nan::FunctionCallbackInfo<v8::Value> &info) {
       player->_channels, player->_sampleRate));
 }
 
+void NativePlayer::GetCurrentSong(const Nan::FunctionCallbackInfo<v8::Value> &info) {
+  auto player = ObjectWrap::Unwrap<NativePlayer>(info.Holder());
+  if (!player->EnsureInitialized()) {
+    return;
+  }
+
+  if (player->_songs.empty()) {
+    info.GetReturnValue().SetUndefined();
+    return;
+  }
+
+  auto song = *player->_songs.begin();
+
+  v8::Local<v8::Object> obj = Nan::New<v8::Object>();
+  obj->Set(Nan::New("path").ToLocalChecked(), Nan::New(song->GetPath()).ToLocalChecked());
+
+  info.GetReturnValue().Set(obj);
+}
+
 void InitModule(v8::Local<v8::Object> exports) {
   av_log_set_level(AV_LOG_QUIET);
 
@@ -177,6 +196,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   Nan::SetPrototypeMethod(tpl, "play", NativePlayer::Play);
   Nan::SetPrototypeMethod(tpl, "close", NativePlayer::Close);
   Nan::SetPrototypeMethod(tpl, "queue", NativePlayer::Queue);
+  Nan::SetPrototypeMethod(tpl, "currentSong", NativePlayer::GetCurrentSong);
 
   constructor.Reset(tpl->GetFunction());
   exports->Set(Nan::New("NativePlayer").ToLocalChecked(), tpl->GetFunction());

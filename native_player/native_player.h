@@ -27,6 +27,7 @@ public:
   static void Play(const Nan::FunctionCallbackInfo<v8::Value> &info);
   static void Pause(const Nan::FunctionCallbackInfo<v8::Value> &info);
   static void Queue(const Nan::FunctionCallbackInfo<v8::Value> &info);
+  static void GetCurrentSong(const Nan::FunctionCallbackInfo<v8::Value> &info);
 };
 
 #endif
