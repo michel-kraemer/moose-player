@@ -148,6 +148,8 @@ void NativePlayer::Queue(const Nan::FunctionCallbackInfo<v8::Value> &info) {
 }
 
 void InitModule(v8::Local<v8::Object> exports) {
+  av_log_set_level(AV_LOG_QUIET);
+
   Nan::HandleScope scope;
 
   auto tpl = Nan::New<v8::FunctionTemplate>(NativePlayer::New);

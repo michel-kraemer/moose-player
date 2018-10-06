@@ -14,8 +14,6 @@ Song::Song(const char *path, int destChannels, int destSampleRate) :
     _streamIndex(0), _format_ctx(0), _codec_ctx(0), _swr(0), _packet(0), _frame(0),
     _resample_buf(0), _resample_buf_linesize(0), _max_resample_buf_samples(0),
     _bufWritePos(0), _bufSize(0), _buf(0), _end_of_file(false), _end_of_decode(false) {
-  // av_log_set_level(AV_LOG_DEBUG);
-
   // get format from audio file
   _format_ctx = avformat_alloc_context();
   if (avformat_open_input(&_format_ctx, path, NULL, NULL) != 0) {
