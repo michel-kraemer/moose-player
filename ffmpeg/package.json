@@ -1,0 +1,13 @@
+{
+  "name": "ffmpeg",
+  "version": "1.0.0",
+  "main": "ffmpeg.js",
+  "author": "Michel Kraemer",
+  "license": "MIT",
+  "private": true,
+  "gypfile": true,
+  "dependencies": {
+    "bindings": "^1.3.0",
+    "nan": "^2.11.1"
+  }
+}

@@ -1,0 +1,3 @@
+[submodule "libgroove"]
+	path = libgroove
+	url = https://github.com/andrewrk/libgroove.git
