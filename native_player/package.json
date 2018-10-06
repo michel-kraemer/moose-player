@@ -1,7 +1,7 @@
 {
-  "name": "ffmpeg",
+  "name": "native_player",
   "version": "1.0.0",
-  "main": "ffmpeg.js",
+  "main": "native_player.js",
   "author": "Michel Kraemer",
   "license": "MIT",
   "private": true,

@@ -1,13 +1,15 @@
 {
   "targets": [{
-    "target_name": "sdl2",
+    "target_name": "native_player",
     "sources": [
-      "sdl2.cpp"
+      "native_player.cpp",
+      "song.cpp"
     ],
     "include_dirs": [
       "<!(node -e \"require('nan')\")"
     ],
     "libraries": [
+      "-lavformat",
       "-lsdl2"
     ]
   }]

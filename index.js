@@ -1,15 +1,12 @@
-const ffmpeg = require("ffmpeg");
-const sdl2 = require("sdl2");
+const NativePlayer = require("native_player");
 const { h, render, Component, Text } = require("ink");
 
-let speakerConfig = {
-  channels: 2,
-  bitDepth: 16,
-  sampleRate: 48000
-};
-let buf = ffmpeg.load("Mixdown(2).mp3", speakerConfig.channels, speakerConfig.sampleRate);
-
-sdl2.play(speakerConfig.channels, speakerConfig.sampleRate, buf, buf.length);
+let player = new NativePlayer();
+player.init(2, 48000);
+player.play();
+// player.queue("lisa0.mp3");
+// player.queue("short.mp3");
+// player.queue("Mixdown(2).mp3");
 
 class Counter extends Component {
   constructor() {
@@ -28,6 +25,7 @@ class Counter extends Component {
   }
 
   componentWillUnmount() {
+    player.close();
   }
 }
 
