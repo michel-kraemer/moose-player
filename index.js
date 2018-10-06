@@ -2,7 +2,6 @@ const ansiEscapes = require("ansi-escapes");
 const chalk = require("chalk");
 const fs = require("fs");
 const lunr = require("lunr");
-const moment = require("moment");
 const NativePlayer = require("native_player");
 const path = require("path");
 const readline = require("readline");
@@ -96,13 +95,23 @@ function showCover(track) {
   }
 }
 
+function formatTime(time) {
+  time = Math.floor(time / 1000);
+  let seconds = time % 60;
+  let minutes = Math.floor(time / 60);
+  return ("" + minutes).padStart(2, "0") + ":" + ("" + seconds).padStart(2, "0");
+}
+
 // run timer that displays title information
 let currentSongPath;
+let currentSongElapsed;
 let paused = false;
+const interval = 500;
 let timerId = setInterval(() => {
   let song = player.currentSong();
   if (song && currentSongPath != song.path) {
     currentSongPath = song.path;
+    currentSongElapsed = 0;
 
     let artist = "";
     let album_name = "";
@@ -123,7 +132,7 @@ let timerId = setInterval(() => {
         album_name = album_name + " (" + track.year + ")";
       }
       if (track.duration) {
-        duration = "/ " + moment(track.duration * 1000).format("mm:ss");
+        duration = "/ " + formatTime(track.duration * 1000);
       }
       album_info = album.length + " songs";
       let album_duration = 0;
@@ -136,7 +145,7 @@ let timerId = setInterval(() => {
         }
       }
       if (album_duration > 0) {
-        album_info = album_info + " (" + moment(album_duration * 1000).format("mm:ss") + ")";
+        album_info = album_info + " (" + formatTime(album_duration * 1000) + ")";
       }
     }
 
@@ -168,15 +177,15 @@ let timerId = setInterval(() => {
     process.stdout.write(infostr);
   }
 
-  let duration = 0;
-  if (song) {
-    duration = song.elapsedMilliseconds;
-  }
   let timestr = ansiEscapes.cursorMove(21, -4) +
-    moment(duration).format("mm:ss") +
+    formatTime(currentSongElapsed) +
     ansiEscapes.cursorRestorePosition;
   process.stdout.write(timestr);
-}, 500);
+
+  if (!paused) {
+    currentSongElapsed += interval;
+  }
+}, interval);
 
 // handle keypress events
 readline.emitKeypressEvents(process.stdin);
