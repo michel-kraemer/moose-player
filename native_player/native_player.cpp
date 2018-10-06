@@ -25,23 +25,39 @@ void NativePlayer::New(const Nan::FunctionCallbackInfo<v8::Value> &info) {
 }
 
 void NativePlayer::AudioCallback(void *udata, Uint8 *stream, int len) {
-  auto player = (NativePlayer *)udata;
   SDL_memset(stream, 0, (size_t)len);
 
-  if (player->_songs.empty()) {
-    return;
-  }
+  auto player = (NativePlayer *)udata;
+  int pos = 0;
+  while (pos < len && !player->_songs.empty()) {
+    auto song = *player->_songs.begin();
+    int available = song->EnsureBytes(len - pos);
+    if (available == 0) {
+      player->_songs.pop_front();
 
-  auto song = *player->_songs.begin();
-  int available = song->EnsureBytes(len);
-  if (available == 0) {
-    player->_songs.pop_front();
-    return;
+      // remove gaps between songs (remove at most 250ms)
+      int truncated_silence = 0;
+      while (pos > sizeof(short) && truncated_silence < player->_sampleRate * player->_channels / 4) {
+        bool silent = true;
+        for (int i = 0; i < player->_channels; ++i) {
+          if (*((short *)(stream + pos - 1)) > 0) {
+            silent = false;
+          }
+        }
+        if (silent) {
+          pos -= sizeof(short);
+          truncated_silence += sizeof(short);
+        } else {
+          break;
+        }
+      }
+    } else {
+      SDL_MixAudioFormat(stream + pos, (const Uint8 *)song->GetBuffer(),
+          AUDIO_S16LSB, (Uint32)available, SDL_MIX_MAXVOLUME);
+      song->DidRead(available);
+      pos += available;
+    }
   }
-
-  SDL_MixAudioFormat(stream, (const Uint8 *)song->GetBuffer(),
-      AUDIO_S16LSB, (Uint32)available, SDL_MIX_MAXVOLUME);
-  song->DidRead(available);
 }
 
 bool NativePlayer::EnsureInitialized() {
