@@ -178,6 +178,7 @@ void NativePlayer::GetCurrentSong(const Nan::FunctionCallbackInfo<v8::Value> &in
 
   v8::Local<v8::Object> obj = Nan::New<v8::Object>();
   obj->Set(Nan::New("path").ToLocalChecked(), Nan::New(song->GetPath()).ToLocalChecked());
+  obj->Set(Nan::New("elapsedMilliseconds").ToLocalChecked(), Nan::New(song->GetElapsedMilliseconds()));
 
   info.GetReturnValue().Set(obj);
 }
@@ -194,6 +195,7 @@ void InitModule(v8::Local<v8::Object> exports) {
 
   Nan::SetPrototypeMethod(tpl, "init", NativePlayer::Init);
   Nan::SetPrototypeMethod(tpl, "play", NativePlayer::Play);
+  Nan::SetPrototypeMethod(tpl, "pause", NativePlayer::Pause);
   Nan::SetPrototypeMethod(tpl, "close", NativePlayer::Close);
   Nan::SetPrototypeMethod(tpl, "queue", NativePlayer::Queue);
   Nan::SetPrototypeMethod(tpl, "currentSong", NativePlayer::GetCurrentSong);

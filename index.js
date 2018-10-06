@@ -98,12 +98,11 @@ function showCover(track) {
 
 // run timer that displays title information
 let currentSongPath;
-let currentSongStartTime = moment();
+let paused = false;
 let timerId = setInterval(() => {
   let song = player.currentSong();
   if (song && currentSongPath != song.path) {
     currentSongPath = song.path;
-    currentSongStartTime = moment();
 
     let artist = "";
     let album_name = "";
@@ -169,9 +168,12 @@ let timerId = setInterval(() => {
     process.stdout.write(infostr);
   }
 
-  let duration = moment(moment().diff(currentSongStartTime));
+  let duration = 0;
+  if (song) {
+    duration = song.elapsedMilliseconds;
+  }
   let timestr = ansiEscapes.cursorMove(21, -4) +
-    duration.format("mm:ss") +
+    moment(duration).format("mm:ss") +
     ansiEscapes.cursorRestorePosition;
   process.stdout.write(timestr);
 }, 500);
@@ -186,5 +188,12 @@ process.stdin.on("keypress", (ch, key) => {
     process.stdout.write(ansiEscapes.cursorShow);
     clearInterval(timerId);
     process.exit(0);
+  } else if (key.name === "space") {
+    if (paused) {
+      player.play();
+    } else {
+      player.pause();
+    }
+    paused = !paused;
   }
 });

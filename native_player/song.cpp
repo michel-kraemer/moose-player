@@ -10,7 +10,7 @@ void throwError(const char *message, int error) {
 }
 
 Song::Song(const char *path, int destChannels, int destSampleRate) :
-    _path(path), _destChannels(destChannels), _destSampleRate(destSampleRate),
+    _path(path), _total_read(0), _destChannels(destChannels), _destSampleRate(destSampleRate),
     _streamIndex(0), _format_ctx(0), _codec_ctx(0), _swr(0), _packet(0), _frame(0),
     _resample_buf(0), _resample_buf_linesize(0), _max_resample_buf_samples(0),
     _bufWritePos(0), _bufSize(0), _buf(0), _end_of_file(false), _end_of_decode(false) {
@@ -209,10 +209,15 @@ const char *Song::GetBuffer() {
 }
 
 void Song::DidRead(int n) {
+  _total_read += n;
   _bufWritePos = _bufWritePos - n;
   memmove(_buf, _buf + n, _bufWritePos);
 }
 
 const std::string &Song::GetPath() {
   return _path;
+}
+
+int Song::GetElapsedMilliseconds() {
+  return floor((float)_total_read / (int)sizeof(short) / _destChannels / _destSampleRate * 1000);
 }
