@@ -11,23 +11,10 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
-// load database
-let albums = {};
+// load database and index
 let database = JSON.parse(fs.readFileSync(".database/database.json"));
-let index = lunr(function() {
-  this.field("artist");
-  this.field("album");
-  this.field("title");
-  this.ref("ref");
-  database.index.forEach(track => {
-    track.ref = track.artist + " - " + track.album;
-    if (!albums[track.ref]) {
-      albums[track.ref] = [];
-    }
-    albums[track.ref].push(track);
-    this.add(track);
-  });
-});
+let serializedIndex = JSON.parse(fs.readFileSync(".database/index.json"));
+let index = lunr.Index.load(serializedIndex);
 
 // search for album to play
 let searchresults = index.search(process.argv[2]);
@@ -44,7 +31,7 @@ if (searchresults.length == 0) {
 }
 
 // sort album tracks
-let album = albums[searchresults[0].ref];
+let album = database.albums[searchresults[0].ref];
 album.sort((a, b) => {
   if (a.track && b.track) {
     return a.track - b.track;

@@ -1,4 +1,5 @@
 const fs = require("fs");
+const lunr = require("lunr");
 const mm = require("music-metadata");
 const path = require("path");
 const rmdir = require("rmdir");
@@ -12,8 +13,18 @@ let covers = [];
 let dir = process.argv[2];
 (async () => {
   let index = await reindex(dir);
+
+  let albums = {};
+  index.forEach(track => {
+    track.ref = track.artist + " - " + track.album;
+    if (!albums[track.ref]) {
+      albums[track.ref] = [];
+    }
+    albums[track.ref].push(track);
+  });
+
   let result = {
-    index
+    albums
   };
 
   rmdir(".database", () => {
@@ -23,7 +34,19 @@ let dir = process.argv[2];
       let c = covers[i];
       fs.writeFileSync(".database/cover" + i, Buffer.from(c, "base64"));
     }
-  })
+
+    let li = lunr(function() {
+      this.field("artist");
+      this.field("album");
+      this.field("title");
+      this.ref("ref");
+      index.forEach(track => {
+        track.ref = track.artist + " - " + track.album;
+        this.add(track);
+      });
+    });
+    fs.writeFileSync(".database/index.json", JSON.stringify(li.toJSON(), undefined, 2));
+  });
 })();
 
 function makeCover(cover) {
