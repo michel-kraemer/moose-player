@@ -49,7 +49,7 @@ for (let track of album) {
 
 // make some room for the UI
 for (let i = 0; i < 11; ++i) {
-  console.log();
+  process.stdout.write("\n");
 }
 process.stdout.write(ansiEscapes.cursorSavePosition + ansiEscapes.cursorHide);
 
@@ -70,18 +70,15 @@ function showCover(track) {
     coverpath = path.join(path.dirname(track.path), "cover.jpg");
   }
 
-  let cover;
-  if (fs.existsSync(coverpath)) {
-    fs.readFile(coverpath, (err, buf) => {
-      if (err) {
-        throw err;
-      }
-      let s = ansiEscapes.cursorMove(0, -10) +
-        ansiEscapes.image(buf, { width: 20 }) +
-        ansiEscapes.cursorRestorePosition;
-      process.stdout.write(s);
-    });
-  }
+  fs.readFile(coverpath, (err, buf) => {
+    if (err) {
+      throw err;
+    }
+    let s = ansiEscapes.cursorMove(0, -10) +
+      ansiEscapes.image(buf, { width: 20 }) +
+      ansiEscapes.cursorRestorePosition;
+    process.stdout.write(s);
+  });
 }
 
 function formatTime(time) {
@@ -176,6 +173,7 @@ function refreshUI() {
   }
 }
 setTimeout(() => refreshUI(), interval / 4);
+refreshUI();
 
 // run timer that refreshes UI
 let timerId = setInterval(refreshUI, interval);
