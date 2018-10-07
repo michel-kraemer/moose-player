@@ -85,14 +85,15 @@ function showCover(track) {
 
   let cover;
   if (fs.existsSync(coverpath)) {
-    cover = fs.readFileSync(coverpath);
-  }
-
-  if (cover) {
-    let s = ansiEscapes.cursorMove(0, -10) +
-      ansiEscapes.image(cover, { width: 20 }) +
-      ansiEscapes.cursorRestorePosition;
-    process.stdout.write(s);
+    fs.readFile(coverpath, (err, buf) => {
+      if (err) {
+        throw err;
+      }
+      let s = ansiEscapes.cursorMove(0, -10) +
+        ansiEscapes.image(buf, { width: 20 }) +
+        ansiEscapes.cursorRestorePosition;
+      process.stdout.write(s);
+    });
   }
 }
 
@@ -103,12 +104,12 @@ function formatTime(time) {
   return ("" + minutes).padStart(2, "0") + ":" + ("" + seconds).padStart(2, "0");
 }
 
-// run timer that displays title information
+// user interface
 let currentSongPath;
 let currentSongElapsed;
 let paused = false;
 const interval = 500;
-let timerId = setInterval(() => {
+function refreshUI() {
   let song = player.currentSong();
   if (song && currentSongPath != song.path) {
     currentSongPath = song.path;
@@ -186,7 +187,11 @@ let timerId = setInterval(() => {
   if (!paused) {
     currentSongElapsed += interval;
   }
-}, interval);
+}
+setTimeout(() => refreshUI(), interval / 4);
+
+// run timer that refreshes UI
+let timerId = setInterval(refreshUI, interval);
 
 // handle keypress events
 readline.emitKeypressEvents(process.stdin);
