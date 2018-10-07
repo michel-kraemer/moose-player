@@ -1,9 +1,9 @@
 {
-  "name": "ucplayer",
+  "name": "moose-player",
   "version": "1.0.0",
   "main": "index.js",
   "author": "Michel Kraemer",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "private": true,
   "dependencies": {
     "ansi-escapes": "^3.1.0",
