@@ -13,8 +13,7 @@ if (process.argv.length < 3) {
 
 // load database
 let albums = {};
-let database = JSON.parse(fs.readFileSync("database.json"));
-let covers = database.covers;
+let database = JSON.parse(fs.readFileSync(".database/database.json"));
 let index = lunr(function() {
   this.field("artist");
   this.field("album");
@@ -77,14 +76,16 @@ function findTrack(path) {
 }
 
 function showCover(track) {
-  let cover;
+  let coverpath;
   if (track.cover) {
-    cover = Buffer.from(covers[track.cover], "base64");
+    coverpath = ".database/cover" + track.cover;
   } else {
-    let coverpath = path.join(path.dirname(track.path), "cover.jpg");
-    if (fs.existsSync(coverpath)) {
-      cover = fs.readFileSync(coverpath);
-    }
+    coverpath = path.join(path.dirname(track.path), "cover.jpg");
+  }
+
+  let cover;
+  if (fs.existsSync(coverpath)) {
+    cover = fs.readFileSync(coverpath);
   }
 
   if (cover) {

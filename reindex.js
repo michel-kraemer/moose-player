@@ -1,6 +1,7 @@
 const fs = require("fs");
 const mm = require("music-metadata");
 const path = require("path");
+const rmdir = require("rmdir");
 
 if (process.argv.length < 3) {
   console.error("Usage: node reindex.js [directory]");
@@ -12,10 +13,17 @@ let dir = process.argv[2];
 (async () => {
   let index = await reindex(dir);
   let result = {
-    index,
-    covers
+    index
   };
-  fs.writeFileSync("database.json", JSON.stringify(result, undefined, 2));
+
+  rmdir(".database", () => {
+    fs.mkdirSync(".database");
+    fs.writeFileSync(".database/database.json", JSON.stringify(result, undefined, 2));
+    for (let i in covers) {
+      let c = covers[i];
+      fs.writeFileSync(".database/cover" + i, Buffer.from(c, "base64"));
+    }
+  })
 })();
 
 function makeCover(cover) {
