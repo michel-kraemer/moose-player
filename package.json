@@ -41,7 +41,40 @@
     "chalk": "^2.4.1",
     "lunr": "^2.3.3",
     "music-metadata": "^3.1.2",
-    "native_player": "./native_player",
+    "native-player": "./native-player",
     "rmdir": "^1.2.0"
+  },
+  "scripts": {
+    "test": "xo"
+  },
+  "devDependencies": {
+    "xo": "^0.23.0"
+  },
+  "xo": {
+    "rules": {
+      "camelcase": [
+        "off"
+      ],
+      "capitalized-comments": [
+        "error",
+        "never"
+      ],
+      "import/order": [
+        "error",
+        {
+          "newlines-between": "always"
+        }
+      ],
+      "no-await-in-loop": "off",
+      "object-curly-spacing": [
+        "error",
+        "always"
+      ],
+      "quotes": [
+        "error",
+        "double"
+      ]
+    },
+    "space": true
   }
 }

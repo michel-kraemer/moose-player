@@ -1,8 +1,8 @@
 {
   "targets": [{
-    "target_name": "native_player",
+    "target_name": "native-player",
     "sources": [
-      "native_player.cpp",
+      "native-player.cpp",
       "song.cpp"
     ],
     "include_dirs": [

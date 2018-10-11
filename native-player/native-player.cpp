@@ -1,4 +1,4 @@
-#include "native_player.h"
+#include "native-player.h"
 
 extern "C" {
 }
@@ -204,4 +204,4 @@ void InitModule(v8::Local<v8::Object> exports) {
   exports->Set(Nan::New("NativePlayer").ToLocalChecked(), tpl->GetFunction());
 }
 
-NODE_MODULE(native_player, InitModule)
+NODE_MODULE(nativeplayer, InitModule)

@@ -1,7 +1,7 @@
 {
-  "name": "native_player",
+  "name": "native-player",
   "version": "1.0.0",
-  "main": "native_player.js",
+  "main": "native-player.js",
   "author": "Michel Kraemer",
   "license": "Apache-2.0",
   "private": true,

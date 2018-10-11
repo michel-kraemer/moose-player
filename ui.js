@@ -1,13 +1,14 @@
-const ansiEscapes = require("ansi-escapes");
-const chalk = require("chalk");
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
 
+const ansiEscapes = require("ansi-escapes");
+const chalk = require("chalk");
+
 const INTERVAL = 500;
 
 function findTrack(album, path) {
-  for (let track of album) {
+  for (const track of album) {
     if (track.path === path) {
       return track;
     }
@@ -17,16 +18,19 @@ function findTrack(album, path) {
 
 function formatTime(time) {
   time = Math.floor(time / 1000);
-  let seconds = time % 60;
-  let minutes = Math.floor(time / 60);
-  return ("" + minutes).padStart(2, "0") + ":" + ("" + seconds).padStart(2, "0");
+  const seconds = time % 60;
+  const minutes = Math.floor(time / 60);
+  return String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
 }
 
 class UI {
-  constructor(player, album) {
+  constructor(player, album, close_callback) {
     this.player = player;
     this.album = album;
+    this.close_callback = close_callback;
+  }
 
+  open() {
     // make some room for the UI
     for (let i = 0; i < 11; ++i) {
       process.stdout.write("\n");
@@ -47,13 +51,15 @@ class UI {
         process.stdin.setRawMode(false);
         process.stdout.write(ansiEscapes.cursorShow);
         this.close();
-        process.exit(0);
+        if (this.close_callback) {
+          this.close_callback();
+        }
       } else if (key.name === "space") {
         if (this.paused) {
-          player.play();
+          this.player.play();
           this.paused = false;
         } else {
-          player.pause();
+          this.player.pause();
           this.paused = true;
         }
       }
@@ -65,8 +71,8 @@ class UI {
   }
 
   refresh() {
-    let song = this.player.currentSong();
-    if (song && this.currentSongPath != song.path) {
+    const song = this.player.currentSong();
+    if (song && this.currentSongPath !== song.path) {
       this.currentSongPath = song.path;
       this.currentSongElapsed = 0;
 
@@ -76,7 +82,7 @@ class UI {
       let duration = "";
       let album_info = "";
 
-      let track = findTrack(this.album, this.currentSongPath);
+      const track = findTrack(this.album, this.currentSongPath);
       if (track) {
         this._showCover(track);
         artist = track.artist;
@@ -93,7 +99,7 @@ class UI {
         }
         album_info = this.album.length + " songs";
         let album_duration = 0;
-        for (let t of this.album) {
+        for (const t of this.album) {
           if (t.duration) {
             album_duration += t.duration;
           } else {
@@ -106,7 +112,7 @@ class UI {
         }
       }
 
-      let infostr = ansiEscapes.cursorMove(21, -10) +
+      const infostr = ansiEscapes.cursorMove(21, -10) +
         ansiEscapes.eraseEndLine +
         album_name +
         ansiEscapes.cursorNextLine +
@@ -134,12 +140,12 @@ class UI {
       process.stdout.write(infostr);
     }
 
-    let timestr = ansiEscapes.cursorMove(21, -4) +
+    const timestr = ansiEscapes.cursorMove(21, -4) +
       formatTime(this.currentSongElapsed) +
       ansiEscapes.cursorRestorePosition;
     process.stdout.write(timestr);
 
-    if (!this.paused) {
+    if (!this.paused) {
       this.currentSongElapsed += INTERVAL;
     }
   }
@@ -161,7 +167,7 @@ class UI {
       if (err) {
         throw err;
       }
-      let s = ansiEscapes.cursorMove(0, -10) +
+      const s = ansiEscapes.cursorMove(0, -10) +
         ansiEscapes.image(buf, { width: 20 }) +
         ansiEscapes.cursorRestorePosition;
       process.stdout.write(s);

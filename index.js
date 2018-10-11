@@ -1,6 +1,10 @@
+#!/usr/bin/env node
+
 const fs = require("fs");
+
 const lunr = require("lunr");
-const NativePlayer = require("native_player");
+const NativePlayer = require("native-player");
+
 const UI = require("./ui");
 
 if (process.argv.length < 3) {
@@ -9,26 +13,26 @@ if (process.argv.length < 3) {
 }
 
 // load database and index
-let database = JSON.parse(fs.readFileSync(".database/database.json"));
-let serializedIndex = JSON.parse(fs.readFileSync(".database/index.json"));
-let index = lunr.Index.load(serializedIndex);
+const database = JSON.parse(fs.readFileSync(".database/database.json"));
+const serializedIndex = JSON.parse(fs.readFileSync(".database/index.json"));
+const index = lunr.Index.load(serializedIndex);
 
 // search for album to play
-let searchresults = index.search(process.argv[2]);
-if (searchresults.length == 0) {
+const searchresults = index.search(process.argv[2]);
+if (searchresults.length === 0) {
   console.log("Found no albums");
-  process.exit(0);
-} else if (searchresults.length > 1) {
+  process.exit(1);
+} else if (searchresults.length > 1) {
   console.log("Found multiple albums:");
   console.log();
   searchresults.forEach(r => console.log("- " + r.ref));
   console.log();
   console.log("Please narrow your search");
-  process.exit(0);
+  process.exit(1);
 }
 
 // sort album tracks
-let album = database.albums[searchresults[0].ref];
+const album = database.albums[searchresults[0].ref];
 album.sort((a, b) => {
   if (a.track && b.track) {
     return a.track - b.track;
@@ -37,12 +41,15 @@ album.sort((a, b) => {
 });
 
 // initialize player
-let player = new NativePlayer();
+const player = new NativePlayer();
 player.init(2, 48000);
 player.play();
-for (let track of album) {
+album.forEach(track => {
   player.queue(track.path);
-}
+});
 
 // initialize UI
-new UI(player, album);
+const ui = new UI(player, album, () => {
+  process.exit(0);
+});
+ui.open();

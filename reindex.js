@@ -1,7 +1,10 @@
+#!/usr/bin/env node
+
 const fs = require("fs");
+const path = require("path");
+
 const lunr = require("lunr");
 const mm = require("music-metadata");
-const path = require("path");
 const rmdir = require("rmdir");
 
 if (process.argv.length < 3) {
@@ -9,12 +12,12 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
-let covers = [];
-let dir = process.argv[2];
+const covers = [];
+const dir = process.argv[2];
 (async () => {
-  let index = await reindex(dir);
+  const index = await reindex(dir);
 
-  let albums = {};
+  const albums = {};
   index.forEach(track => {
     track.ref = track.artist + " - " + track.album;
     if (!albums[track.ref]) {
@@ -23,19 +26,18 @@ let dir = process.argv[2];
     albums[track.ref].push(track);
   });
 
-  let result = {
+  const result = {
     albums
   };
 
   rmdir(".database", () => {
     fs.mkdirSync(".database");
     fs.writeFileSync(".database/database.json", JSON.stringify(result, undefined, 2));
-    for (let i in covers) {
-      let c = covers[i];
+    covers.forEach((c, i) => {
       fs.writeFileSync(".database/cover" + i, Buffer.from(c, "base64"));
-    }
+    });
 
-    let li = lunr(function() {
+    const li = lunr(function () {
       this.field("artist");
       this.field("album");
       this.field("title");
@@ -51,7 +53,7 @@ let dir = process.argv[2];
 
 function makeCover(cover) {
   let i = covers.indexOf(cover);
-  if (i == -1) {
+  if (i === -1) {
     i = covers.length;
     covers.push(cover);
   }
@@ -60,23 +62,23 @@ function makeCover(cover) {
 
 async function reindex(dir) {
   let result = [];
-  let files = fs.readdirSync(dir, { withFileTypes: true });
-  for (let f of files) {
-    let absolutePath = path.join(dir, f.name);
+  const files = fs.readdirSync(dir, { withFileTypes: true });
+  for (const f of files) {
+    const absolutePath = path.join(dir, f.name);
     if (f.isDirectory()) {
       result = result.concat(await reindex(absolutePath));
     } else {
       try {
-        let metadata = await mm.parseFile(absolutePath);
-        let cover = undefined;
+        const metadata = await mm.parseFile(absolutePath);
+        let cover;
         if (metadata.common.picture) {
           cover = makeCover(metadata.common.picture[0].data.toString("base64"));
         }
-        let track = undefined;
+        let track;
         if (metadata.common.track && metadata.common.track.no) {
           track = metadata.common.track.no;
         }
-        let simple = {
+        const simple = {
           artist: metadata.common.artist,
           album: metadata.common.album,
           track,
@@ -87,9 +89,9 @@ async function reindex(dir) {
           path: absolutePath
         };
         result.push(simple);
-      } catch (e) {
+      } catch (error) {
         console.log(absolutePath);
-        console.warn(e.message);
+        console.warn(error.message);
       }
     }
   }
