@@ -3,8 +3,39 @@
   "version": "1.0.0",
   "main": "index.js",
   "author": "Michel Kraemer",
+  "description": "A simplistic console music player",
   "license": "Apache-2.0",
   "private": true,
+  "engines": {
+    "node": ">=8"
+  },
+  "files": [
+    "index.js",
+    "ui.js",
+    "reindex.js"
+  ],
+  "keywords": [
+    "audio",
+    "player",
+    "music",
+    "terminal",
+    "command-line",
+    "console",
+    "cli",
+    "ffmpeg",
+    "libav",
+    "libsdl2",
+    "sdl",
+    "sdl2",
+    "shell",
+    "text",
+    "xterm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/michel-kraemer/moose-player.git"
+  },
+  "bugs": "https://github.com/michel-kraemer/moose-player/issues",
   "dependencies": {
     "ansi-escapes": "^3.1.0",
     "chalk": "^2.4.1",
