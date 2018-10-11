@@ -22,25 +22,6 @@ function formatTime(time) {
   return ("" + minutes).padStart(2, "0") + ":" + ("" + seconds).padStart(2, "0");
 }
 
-function showCover(track) {
-  let coverpath;
-  if (track.cover) {
-    coverpath = ".database/cover" + track.cover;
-  } else {
-    coverpath = path.join(path.dirname(track.path), "cover.jpg");
-  }
-
-  fs.readFile(coverpath, (err, buf) => {
-    if (err) {
-      throw err;
-    }
-    let s = ansiEscapes.cursorMove(0, -10) +
-      ansiEscapes.image(buf, { width: 20 }) +
-      ansiEscapes.cursorRestorePosition;
-    process.stdout.write(s);
-  });
-}
-
 class UI {
   constructor(player, album) {
     this.player = player;
@@ -97,7 +78,7 @@ class UI {
 
       let track = findTrack(this.album, this.currentSongPath);
       if (track) {
-        showCover(track);
+        this._showCover(track);
         artist = track.artist;
         album_name = track.album;
         title = track.title;
@@ -161,6 +142,30 @@ class UI {
     if (!this.paused) {
       this.currentSongElapsed += INTERVAL;
     }
+  }
+
+  _showCover(track) {
+    let coverpath;
+    if (track.cover) {
+      coverpath = ".database/cover" + track.cover;
+    } else {
+      coverpath = path.join(path.dirname(track.path), "cover.jpg");
+    }
+
+    if (this.coverpath === coverpath) {
+      return;
+    }
+    this.coverpath = coverpath;
+
+    fs.readFile(coverpath, (err, buf) => {
+      if (err) {
+        throw err;
+      }
+      let s = ansiEscapes.cursorMove(0, -10) +
+        ansiEscapes.image(buf, { width: 20 }) +
+        ansiEscapes.cursorRestorePosition;
+      process.stdout.write(s);
+    });
   }
 }
 
