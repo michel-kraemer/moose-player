@@ -62,6 +62,10 @@ class UI {
           this.player.pause();
           this.paused = true;
         }
+      } else if (key.name === "n") {
+        this.player.next();
+      } else if (key.name === "p") {
+        this.player.prev();
       }
     });
   }

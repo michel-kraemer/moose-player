@@ -1,8 +1,5 @@
 #include "native-player.h"
 
-extern "C" {
-}
-
 Nan::Persistent<v8::Function> constructor;
 
 NativePlayer::NativePlayer() : _initialized(false) {
@@ -28,12 +25,18 @@ void NativePlayer::AudioCallback(void *udata, Uint8 *stream, int len) {
   SDL_memset(stream, 0, (size_t)len);
 
   auto player = (NativePlayer *)udata;
+  std::lock_guard<std::mutex> lock(player->_mutex);
   int pos = 0;
   while (pos < len && !player->_songs.empty()) {
     auto song = *player->_songs.begin();
     int available = song->EnsureBytes(len - pos);
     if (available == 0) {
-      player->_songs.pop_front();
+      if (player->_songs.size() == 1) {
+        // do not skip beyond the last song
+        return;
+      }
+
+      player->NextInternalNoLock();
 
       // remove gaps between songs (remove at most 250ms)
       int truncated_silence = 0;
@@ -114,11 +117,67 @@ void NativePlayer::Init(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   }
 }
 
+void NativePlayer::NextInternal() {
+  std::lock_guard<std::mutex> lock(_mutex);
+  NextInternalNoLock();
+}
+
+void NativePlayer::NextInternalNoLock() {
+  if (_songs.empty()) {
+    return;
+  }
+
+  std::string path = (*_songs.begin())->GetPath();
+  _songs.pop_front();
+  _playedSongs.push_back(path);
+
+  if (_songs.empty()) {
+    // enqueue all songs again (i.e. repeat the album)
+    for (auto i = _playedSongs.begin(); i != _playedSongs.end(); ++i) {
+      QueueInternalNoLock(i->c_str(), true);
+    }
+    _playedSongs.clear();
+  }
+}
+
+void NativePlayer::PrevInternal() {
+  std::lock_guard<std::mutex> lock(_mutex);
+  if (_playedSongs.empty()) {
+    return;
+  }
+
+  // reset the current song
+  std::string path1 = (*_songs.begin())->GetPath();
+  _songs.pop_front();
+  QueueInternalNoLock(path1.c_str(), false);
+
+  // play the previous song
+  std::string path2 = *_playedSongs.rbegin();
+  _playedSongs.pop_back();
+  QueueInternalNoLock(path2.c_str(), false);
+}
+
+void NativePlayer::QueueInternal(const char *path, bool back) {
+  std::lock_guard<std::mutex> lock(_mutex);
+  QueueInternalNoLock(path, back);
+}
+
+void NativePlayer::QueueInternalNoLock(const char *path, bool back) {
+  auto s = std::make_shared<Song>(path, _channels, _sampleRate);
+  if (back) {
+    _songs.push_back(s);
+  } else {
+    _songs.push_front(s);
+  }
+}
+
 void NativePlayer::Close(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   auto player = ObjectWrap::Unwrap<NativePlayer>(info.Holder());
   if (!player->EnsureInitialized()) {
     return;
   }
+
+  std::lock_guard<std::mutex> lock(player->_mutex);
   player->_songs.clear();
   SDL_CloseAudio();
 }
@@ -141,6 +200,24 @@ void NativePlayer::Pause(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   SDL_PauseAudio(TRUE);
 }
 
+void NativePlayer::Next(const Nan::FunctionCallbackInfo<v8::Value> &info) {
+  auto player = ObjectWrap::Unwrap<NativePlayer>(info.Holder());
+  if (!player->EnsureInitialized()) {
+    return;
+  }
+
+  player->NextInternal();
+}
+
+void NativePlayer::Prev(const Nan::FunctionCallbackInfo<v8::Value> &info) {
+  auto player = ObjectWrap::Unwrap<NativePlayer>(info.Holder());
+  if (!player->EnsureInitialized()) {
+    return;
+  }
+
+  player->PrevInternal();
+}
+
 void NativePlayer::Queue(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   auto player = ObjectWrap::Unwrap<NativePlayer>(info.Holder());
   if (!player->EnsureInitialized()) {
@@ -158,9 +235,7 @@ void NativePlayer::Queue(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   }
 
   v8::String::Utf8Value path(info.GetIsolate(), info[0]->ToString());
-
-  player->_songs.push_back(std::make_shared<Song>(*path,
-      player->_channels, player->_sampleRate));
+  player->QueueInternal(*path, true);
 }
 
 void NativePlayer::GetCurrentSong(const Nan::FunctionCallbackInfo<v8::Value> &info) {
@@ -169,6 +244,7 @@ void NativePlayer::GetCurrentSong(const Nan::FunctionCallbackInfo<v8::Value> &in
     return;
   }
 
+  std::lock_guard<std::mutex> lock(player->_mutex);
   if (player->_songs.empty()) {
     info.GetReturnValue().SetUndefined();
     return;
@@ -194,9 +270,11 @@ void InitModule(v8::Local<v8::Object> exports) {
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
   Nan::SetPrototypeMethod(tpl, "init", NativePlayer::Init);
+  Nan::SetPrototypeMethod(tpl, "close", NativePlayer::Close);
   Nan::SetPrototypeMethod(tpl, "play", NativePlayer::Play);
   Nan::SetPrototypeMethod(tpl, "pause", NativePlayer::Pause);
-  Nan::SetPrototypeMethod(tpl, "close", NativePlayer::Close);
+  Nan::SetPrototypeMethod(tpl, "next", NativePlayer::Next);
+  Nan::SetPrototypeMethod(tpl, "prev", NativePlayer::Prev);
   Nan::SetPrototypeMethod(tpl, "queue", NativePlayer::Queue);
   Nan::SetPrototypeMethod(tpl, "currentSong", NativePlayer::GetCurrentSong);
 
