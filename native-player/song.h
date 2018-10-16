@@ -12,7 +12,7 @@ extern "C" {
 class Song {
 private:
   std::string _path;
-  int _total_read;
+  double _first_read_timestamp;
 
   int _destChannels;
   int _destSampleRate;
@@ -42,7 +42,7 @@ public:
   const char *GetBuffer();
   void DidRead(int n);
   const std::string &GetPath();
-  int GetElapsedMilliseconds();
+  double GetFirstReadTimestamp();
 };
 
 #endif

@@ -28,6 +28,7 @@ class UI {
     this.player = player;
     this.album = album;
     this.close_callback = close_callback;
+    this.currentSongFirstReadTimestamp = 0;
   }
 
   open() {
@@ -57,9 +58,11 @@ class UI {
       } else if (key.name === "space") {
         if (this.paused) {
           this.player.play();
+          this.currentSongFirstReadTimestamp += Date.now() - this.pausedTimestamp;
           this.paused = false;
         } else {
           this.player.pause();
+          this.pausedTimestamp = Date.now();
           this.paused = true;
         }
       } else if (key.name === "n") {
@@ -78,7 +81,11 @@ class UI {
     const song = this.player.currentSong();
     if (song && this.currentSongPath !== song.path) {
       this.currentSongPath = song.path;
-      this.currentSongElapsed = 0;
+      this.currentSongFirstReadTimestamp = song.firstReadTimestamp || Date.now();
+
+      // also set pausedTimestamp to beginning of the song so we get a correct
+      // display if we change songs while we're paused
+      this.pausedTimestamp = this.currentSongFirstReadTimestamp;
 
       let artist = "";
       let album_name = "";
@@ -144,14 +151,14 @@ class UI {
       process.stdout.write(infostr);
     }
 
+    let now = Date.now();
+    if (this.paused) {
+      now = this.pausedTimestamp;
+    }
     const timestr = ansiEscapes.cursorMove(21, -4) +
-      formatTime(this.currentSongElapsed) +
+      formatTime(now - this.currentSongFirstReadTimestamp) +
       ansiEscapes.cursorRestorePosition;
     process.stdout.write(timestr);
-
-    if (!this.paused) {
-      this.currentSongElapsed += INTERVAL;
-    }
   }
 
   _showCover(track) {
