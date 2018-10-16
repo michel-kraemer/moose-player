@@ -29,6 +29,7 @@ class UI {
     this.album = album;
     this.close_callback = close_callback;
     this.currentSongFirstReadTimestamp = 0;
+    this.currentSongDuration = Number.MAX_VALUE;
   }
 
   open() {
@@ -82,6 +83,7 @@ class UI {
     if (song && this.currentSongPath !== song.path) {
       this.currentSongPath = song.path;
       this.currentSongFirstReadTimestamp = song.firstReadTimestamp || Date.now();
+      this.currentSongDuration = Number.MAX_VALUE;
 
       // also set pausedTimestamp to beginning of the song so we get a correct
       // display if we change songs while we're paused
@@ -106,7 +108,8 @@ class UI {
           album_name = album_name + " (" + track.year + ")";
         }
         if (track.duration) {
-          duration = "/ " + formatTime(track.duration * 1000);
+          this.currentSongDuration = track.duration * 1000;
+          duration = "00:00 / " + formatTime(this.currentSongDuration);
         }
         album_info = this.album.length + " songs";
         let album_duration = 0;
@@ -140,7 +143,6 @@ class UI {
         ansiEscapes.cursorNextLine +
         ansiEscapes.cursorMove(21) +
         ansiEscapes.eraseEndLine +
-        ansiEscapes.cursorMove(6) +
         duration +
         ansiEscapes.cursorNextLine +
         ansiEscapes.cursorNextLine +
@@ -155,10 +157,12 @@ class UI {
     if (this.paused) {
       now = this.pausedTimestamp;
     }
-    const timestr = ansiEscapes.cursorMove(21, -4) +
-      formatTime(now - this.currentSongFirstReadTimestamp) +
-      ansiEscapes.cursorRestorePosition;
-    process.stdout.write(timestr);
+    let elapsed = now - this.currentSongFirstReadTimestamp;
+    if (!song.endOfDecode || elapsed < this.currentSongDuration) {
+      const timestr = ansiEscapes.cursorMove(21, -4) +
+        formatTime(elapsed) + ansiEscapes.cursorRestorePosition;
+      process.stdout.write(timestr);
+    }
   }
 
   _showCover(track) {

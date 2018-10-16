@@ -43,6 +43,7 @@ public:
   void DidRead(int n);
   const std::string &GetPath();
   double GetFirstReadTimestamp();
+  bool IsEndOfDecode();
 };
 
 #endif

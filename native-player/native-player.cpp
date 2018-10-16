@@ -255,6 +255,7 @@ void NativePlayer::GetCurrentSong(const Nan::FunctionCallbackInfo<v8::Value> &in
   v8::Local<v8::Object> obj = Nan::New<v8::Object>();
   obj->Set(Nan::New("path").ToLocalChecked(), Nan::New(song->GetPath()).ToLocalChecked());
   obj->Set(Nan::New("firstReadTimestamp").ToLocalChecked(), Nan::New(song->GetFirstReadTimestamp()));
+  obj->Set(Nan::New("endOfDecode").ToLocalChecked(), Nan::New(song->IsEndOfDecode()));
 
   info.GetReturnValue().Set(obj);
 }

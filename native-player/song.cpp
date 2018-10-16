@@ -227,3 +227,7 @@ const std::string &Song::GetPath() {
 double Song::GetFirstReadTimestamp() {
   return _first_read_timestamp;
 }
+
+bool Song::IsEndOfDecode() {
+  return _end_of_decode;
+}
