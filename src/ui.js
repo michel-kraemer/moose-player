@@ -10,6 +10,7 @@ const chalk = require("chalk");
 const NativePlayer = require("native-player");
 
 const INTERVAL = 500;
+const CURRENT_TRACK_STRING_TIMEOUT = 500;
 
 function findTrack(album: Track[], path: string): ?Track {
   for (const track of album) {
@@ -18,6 +19,26 @@ function findTrack(album: Track[], path: string): ?Track {
     }
   }
   return undefined;
+}
+
+function findTrackByTrackString(album: Track[], trackString: string): number {
+  const maxTrackStringLength = Math.floor(Math.log(album.length));
+
+  let result = 0;
+  for (let i = 1; i <= album.length; ++i) {
+    let ts = String(i);
+    if (trackString[0] === "0") {
+      ts = ts.padStart(maxTrackStringLength, "0");
+    }
+    if (ts.startsWith(trackString)) {
+      if (result > 0) {
+        return 0;
+      }
+      result = i;
+    }
+  }
+
+  return result;
 }
 
 function formatTime(time: number): string {
@@ -61,7 +82,7 @@ class UI {
   /**
    * The path of the song currently being played
    */
-  currentSongPath: string;
+  currentSongPath: ?string;
 
   /**
    * True of the player is paused
@@ -78,12 +99,28 @@ class UI {
    */
   timerId: IntervalID;
 
+  /**
+   * A string of recently pressed number keys. This string will be used to
+   * jump to a matching track. For example, if the "5" key is pressed, the
+   * player will jump to the fifth song. If "01" has been pressed, it will
+   * jump to the first song, and if "10" has been pressed, to the tenth. The
+   * string will be reset after CURRENT_TRACK_STRING_TIMEOUT ms.
+   */
+  currentTrackString: string;
+
+  /**
+   * A timer that will reset the current track string and jump to the
+   * specified song if possible
+   */
+  currentTrackStringTimeout: ?TimeoutID;
+
   constructor(player: NativePlayer, album: Track[], close_callback: () => void) {
     this.player = player;
     this.album = album;
     this.close_callback = close_callback;
     this.currentSongFirstReadTimestamp = 0;
     this.currentSongDuration = Number.MAX_VALUE;
+    this.currentTrackString = "";
   }
 
   open() {
@@ -128,6 +165,27 @@ class UI {
         this.player.next();
       } else if (key.name === "p" || key.name === "up") {
         this.player.prev();
+      } else if (key.name >= "0" && key.name <= "9") {
+        if (this.currentTrackStringTimeout) {
+          clearTimeout(this.currentTrackStringTimeout);
+          this.currentTrackStringTimeout = undefined;
+        }
+        this.currentTrackString += key.name;
+        const track = findTrackByTrackString(this.album, this.currentTrackString);
+        if (track > 0) {
+          this.currentTrackString = "";
+          this.currentSongPath = undefined;
+          this.player.goto(track);
+        } else {
+          this.currentTrackStringTimeout = setTimeout(() => {
+            const n = Number(this.currentTrackString);
+            if (n > 0 && n <= this.album.length) {
+              this.currentSongPath = undefined;
+              this.player.goto(n);
+            }
+            this.currentTrackString = "";
+          }, CURRENT_TRACK_STRING_TIMEOUT);
+        }
       }
     });
   }

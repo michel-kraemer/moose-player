@@ -25,6 +25,8 @@ private:
   void NextInternal();
   void NextInternalNoLock();
   void PrevInternal();
+  void PrevInternalNoLock();
+  void GotoInternal(int track);
   void QueueInternal(const char *path, bool back);
   void QueueInternalNoLock(const char *path, bool back);
 
@@ -36,6 +38,7 @@ public:
   static void Pause(const Nan::FunctionCallbackInfo<v8::Value> &info);
   static void Next(const Nan::FunctionCallbackInfo<v8::Value> &info);
   static void Prev(const Nan::FunctionCallbackInfo<v8::Value> &info);
+  static void Goto(const Nan::FunctionCallbackInfo<v8::Value> &info);
   static void Queue(const Nan::FunctionCallbackInfo<v8::Value> &info);
   static void GetCurrentSong(const Nan::FunctionCallbackInfo<v8::Value> &info);
 };

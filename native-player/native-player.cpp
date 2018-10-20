@@ -142,6 +142,10 @@ void NativePlayer::NextInternalNoLock() {
 
 void NativePlayer::PrevInternal() {
   std::lock_guard<std::mutex> lock(_mutex);
+  PrevInternalNoLock();
+}
+
+void NativePlayer::PrevInternalNoLock() {
   if (_playedSongs.empty()) {
     return;
   }
@@ -155,6 +159,34 @@ void NativePlayer::PrevInternal() {
   std::string path2 = *_playedSongs.rbegin();
   _playedSongs.pop_back();
   QueueInternalNoLock(path2.c_str(), false);
+}
+
+void NativePlayer::GotoInternal(int track) {
+  std::lock_guard<std::mutex> lock(_mutex);
+  if (track < 1 || track > _playedSongs.size() + _songs.size()) {
+    return;
+  }
+
+  int step = (track - 1) - _playedSongs.size();
+
+  if (step == 0) {
+    // restart current song
+    std::string path = (*_songs.begin())->GetPath();
+    _songs.pop_front();
+    QueueInternalNoLock(path.c_str(), false);
+  } else if (step < 0) {
+    // go backward
+    while (step < 0) {
+      PrevInternalNoLock();
+      ++step;
+    }
+  } else {
+    // go forward
+    while (step > 0) {
+      NextInternalNoLock();
+      --step;
+    }
+  }
 }
 
 void NativePlayer::QueueInternal(const char *path, bool back) {
@@ -218,6 +250,26 @@ void NativePlayer::Prev(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   player->PrevInternal();
 }
 
+void NativePlayer::Goto(const Nan::FunctionCallbackInfo<v8::Value> &info) {
+  auto player = ObjectWrap::Unwrap<NativePlayer>(info.Holder());
+  if (!player->EnsureInitialized()) {
+    return;
+  }
+
+  if (info.Length() < 1) {
+    Nan::ThrowTypeError("Wrong number of arguments");
+    return;
+  }
+
+  if (!info[0]->IsNumber()) {
+    Nan::ThrowTypeError("'track' must be a number");
+    return;
+  }
+
+  int track = info[0]->NumberValue();
+  player->GotoInternal(track);
+}
+
 void NativePlayer::Queue(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   auto player = ObjectWrap::Unwrap<NativePlayer>(info.Holder());
   if (!player->EnsureInitialized()) {
@@ -276,6 +328,7 @@ void InitModule(v8::Local<v8::Object> exports) {
   Nan::SetPrototypeMethod(tpl, "pause", NativePlayer::Pause);
   Nan::SetPrototypeMethod(tpl, "next", NativePlayer::Next);
   Nan::SetPrototypeMethod(tpl, "prev", NativePlayer::Prev);
+  Nan::SetPrototypeMethod(tpl, "goto", NativePlayer::Goto);
   Nan::SetPrototypeMethod(tpl, "queue", NativePlayer::Queue);
   Nan::SetPrototypeMethod(tpl, "currentSong", NativePlayer::GetCurrentSong);
 

@@ -9,6 +9,7 @@ declare module "native-player" {
     pause(): void;
     next(): void;
     prev(): void;
+    goto(track: number): void;
     queue(path: string): void;
     currentSong(): {
       path: string;
