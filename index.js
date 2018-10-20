@@ -40,9 +40,17 @@ album.sort((a, b) => {
   return a.title.localeCompare(b.title);
 });
 
+// get best matching sample rate
+let sampleRate = 44100; // minimum sample rate
+album.forEach(track => {
+  if (track.sampleRate > sampleRate) {
+    sampleRate = track.sampleRate;
+  }
+});
+
 // initialize player
 const player = new NativePlayer();
-player.init(2, 48000);
+player.init(2, sampleRate);
 player.play();
 album.forEach(track => {
   player.queue(track.path);

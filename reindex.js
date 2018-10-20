@@ -92,6 +92,7 @@ async function reindex(dir) {
           year: metadata.common.year,
           cover,
           duration: metadata.format.duration,
+          sampleRate: metadata.format.sampleRate,
           path: absolutePath
         };
         result.push(simple);
