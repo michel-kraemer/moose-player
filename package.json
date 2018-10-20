@@ -45,19 +45,44 @@
     "rmdir": "^1.2.0"
   },
   "scripts": {
-    "test": "xo"
+    "build": "babel src/ -d lib/",
+    "prepublish": "yarn run build",
+    "test": "xo src/**.js"
   },
   "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "^10.0.1",
+    "babel-preset-flow": "^6.23.0",
+    "eslint-config-xo-flow": "^0.1.0",
+    "eslint-plugin-flowtype": "^3.0.0",
+    "flow-bin": "^0.83.0",
     "xo": "^0.23.0"
   },
   "xo": {
+    "extends": "xo-flow",
     "rules": {
       "camelcase": [
         "off"
       ],
       "capitalized-comments": [
+        "off"
+      ],
+      "flowtype/newline-after-flow-annotation": [
         "error",
-        "never"
+        "always"
+      ],
+      "flowtype/require-parameter-type": [
+        "error",
+        {
+          "excludeArrowFunctions": true
+        }
+      ],
+      "flowtype/require-return-type": [
+        "error",
+        "always",
+        {
+          "excludeArrowFunctions": true
+        }
       ],
       "import/order": [
         "error",

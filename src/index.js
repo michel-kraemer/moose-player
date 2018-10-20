@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// @flow
+
 const fs = require("fs");
 
 const lunr = require("lunr");
@@ -13,8 +15,8 @@ if (process.argv.length < 3) {
 }
 
 // load database and index
-const database = JSON.parse(fs.readFileSync(".database/database.json"));
-const serializedIndex = JSON.parse(fs.readFileSync(".database/index.json"));
+const database = JSON.parse(fs.readFileSync(".database/database.json", "utf-8"));
+const serializedIndex = JSON.parse(fs.readFileSync(".database/index.json", "utf-8"));
 const index = lunr.Index.load(serializedIndex);
 
 // search for album to play
@@ -32,7 +34,7 @@ if (searchresults.length === 0) {
 }
 
 // sort album tracks
-const album = database.albums[searchresults[0].ref];
+const album: Track[] = database.albums[searchresults[0].ref];
 album.sort((a, b) => {
   if (a.track && b.track) {
     return a.track - b.track;

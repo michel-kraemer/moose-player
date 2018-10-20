@@ -1,13 +1,17 @@
+// @flow
+
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
+const tty = require("tty");
 
 const ansiEscapes = require("ansi-escapes");
 const chalk = require("chalk");
+const NativePlayer = require("native-player");
 
 const INTERVAL = 500;
 
-function findTrack(album, path) {
+function findTrack(album: Track[], path: string): ?Track {
   for (const track of album) {
     if (track.path === path) {
       return track;
@@ -16,7 +20,7 @@ function findTrack(album, path) {
   return undefined;
 }
 
-function formatTime(time) {
+function formatTime(time: number): string {
   time = Math.floor(time / 1000);
   const seconds = time % 60;
   const minutes = Math.floor(time / 60);
@@ -24,7 +28,57 @@ function formatTime(time) {
 }
 
 class UI {
-  constructor(player, album, close_callback) {
+  /**
+   * The audio player
+   */
+  player: NativePlayer;
+
+  /**
+   * The album currently being played
+   */
+  album: Track[];
+
+  /**
+   * A function that will be called when the UI is closed
+   */
+  close_callback: () => void;
+
+  /**
+   * The path to the cover of the track currently being played
+   */
+  coverpath: string;
+
+  /**
+   * The timestamp when the first bytes were read from the current song
+   */
+  currentSongFirstReadTimestamp: number;
+
+  /**
+   * The duration of the song currently being played
+   */
+  currentSongDuration: number;
+
+  /**
+   * The path of the song currently being played
+   */
+  currentSongPath: string;
+
+  /**
+   * True of the player is paused
+   */
+  paused: boolean;
+
+  /**
+   * The timestamp when the player was paused
+   */
+  pausedTimestamp: number;
+
+  /**
+   * The ID of the timer that refreshes the UI
+   */
+  timerId: IntervalID;
+
+  constructor(player: NativePlayer, album: Track[], close_callback: () => void) {
     this.player = player;
     this.album = album;
     this.close_callback = close_callback;
@@ -46,11 +100,15 @@ class UI {
 
     // handle keypress events
     readline.emitKeypressEvents(process.stdin);
-    process.stdin.setRawMode(true);
+    if (process.stdin instanceof tty.ReadStream) {
+      process.stdin.setRawMode(true);
+    }
     process.stdin.on("keypress", (ch, key) => {
       if (key.name === "q") {
         // quit application
-        process.stdin.setRawMode(false);
+        if (process.stdin instanceof tty.ReadStream) {
+          process.stdin.setRawMode(false);
+        }
         process.stdout.write(ansiEscapes.cursorShow);
         this.close();
         if (this.close_callback) {
@@ -157,7 +215,7 @@ class UI {
     if (this.paused) {
       now = this.pausedTimestamp;
     }
-    let elapsed = now - this.currentSongFirstReadTimestamp;
+    const elapsed = now - this.currentSongFirstReadTimestamp;
     if (!song.endOfDecode || elapsed < this.currentSongDuration) {
       const timestr = ansiEscapes.cursorMove(21, -4) +
         formatTime(elapsed) + ansiEscapes.cursorRestorePosition;
@@ -165,7 +223,7 @@ class UI {
     }
   }
 
-  _showCover(track) {
+  _showCover(track: Track) {
     let coverpath;
     if (track.cover) {
       coverpath = ".database/cover" + track.cover;

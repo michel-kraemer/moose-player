@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// @flow
+
 const fs = require("fs");
 const path = require("path");
 
@@ -51,7 +53,7 @@ const dir = process.argv[2];
   });
 })();
 
-function makeCover(cover) {
+function makeCover(cover: string): number {
   let i = covers.indexOf(cover);
   if (i === -1) {
     i = covers.length;
@@ -60,18 +62,19 @@ function makeCover(cover) {
   return i;
 }
 
-async function reindex(dir) {
+async function reindex(dir: string): Promise<Track[]> {
   let result = [];
-  const files = fs.readdirSync(dir, { withFileTypes: true });
+  const files = fs.readdirSync(dir);
   for (const f of files) {
     // skip non-music files
-    if (f.name.endsWith(".png") || f.name.endsWith(".jpg") || f.name.endsWith(".pdf") ||
-        f.name.endsWith(".DS_Store") || f.name.endsWith(".sh")) {
+    if (f.endsWith(".png") || f.endsWith(".jpg") || f.endsWith(".pdf") ||
+        f.endsWith(".DS_Store") || f.endsWith(".sh")) {
       continue;
     }
 
-    const absolutePath = path.join(dir, f.name);
-    if (f.isDirectory()) {
+    const absolutePath = path.join(dir, f);
+    const stats = fs.statSync(absolutePath);
+    if (stats.isDirectory()) {
       result = result.concat(await reindex(absolutePath));
     } else {
       try {
@@ -84,7 +87,7 @@ async function reindex(dir) {
         if (metadata.common.track && metadata.common.track.no) {
           track = metadata.common.track.no;
         }
-        const simple = {
+        const simple: Track = {
           artist: metadata.common.artist,
           album: metadata.common.album,
           track,
