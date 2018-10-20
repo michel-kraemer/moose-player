@@ -64,6 +64,12 @@ async function reindex(dir) {
   let result = [];
   const files = fs.readdirSync(dir, { withFileTypes: true });
   for (const f of files) {
+    // skip non-music files
+    if (f.name.endsWith(".png") || f.name.endsWith(".jpg") || f.name.endsWith(".pdf") ||
+        f.name.endsWith(".DS_Store") || f.name.endsWith(".sh")) {
+      continue;
+    }
+
     const absolutePath = path.join(dir, f.name);
     if (f.isDirectory()) {
       result = result.concat(await reindex(absolutePath));
