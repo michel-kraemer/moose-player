@@ -1,9 +1,13 @@
 {
-  "folders":
-  [
-    {
-      "path": ".",
-      "folder_exclude_patterns": ["lib", "node_modules"]
-    }
-  ]
+  "folders": [{
+    "path": ".",
+    "folder_exclude_patterns": ["lib", "node_modules"]
+  }],
+  "settings": {
+    "tab_size": 2,
+    "translate_tabs_to_spaces": true
+  },
+  "syntax_override": {
+    "\\.js$": ["Babel", "JavaScript (Babel)"]
+  }
 }
