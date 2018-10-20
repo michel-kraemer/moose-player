@@ -142,50 +142,15 @@ class UI {
     }
     process.stdin.on("keypress", (ch, key) => {
       if (key.name === "q") {
-        // quit application
-        if (process.stdin instanceof tty.ReadStream) {
-          process.stdin.setRawMode(false);
-        }
-        process.stdout.write(ansiEscapes.cursorShow);
-        this.close();
-        if (this.close_callback) {
-          this.close_callback();
-        }
+        this._onKeyQuit();
       } else if (key.name === "space") {
-        if (this.paused) {
-          this.player.play();
-          this.currentSongFirstReadTimestamp += Date.now() - this.pausedTimestamp;
-          this.paused = false;
-        } else {
-          this.player.pause();
-          this.pausedTimestamp = Date.now();
-          this.paused = true;
-        }
+        this._onKeyPause();
       } else if (key.name === "n" || key.name === "down") {
         this.player.next();
       } else if (key.name === "p" || key.name === "up") {
         this.player.prev();
       } else if (key.name >= "0" && key.name <= "9") {
-        if (this.currentTrackStringTimeout) {
-          clearTimeout(this.currentTrackStringTimeout);
-          this.currentTrackStringTimeout = undefined;
-        }
-        this.currentTrackString += key.name;
-        const track = findTrackByTrackString(this.album, this.currentTrackString);
-        if (track > 0) {
-          this.currentTrackString = "";
-          this.currentSongPath = undefined;
-          this.player.goto(track);
-        } else {
-          this.currentTrackStringTimeout = setTimeout(() => {
-            const n = Number(this.currentTrackString);
-            if (n > 0 && n <= this.album.length) {
-              this.currentSongPath = undefined;
-              this.player.goto(n);
-            }
-            this.currentTrackString = "";
-          }, CURRENT_TRACK_STRING_TIMEOUT);
-        }
+        this._onKeyNumber(key.name);
       }
     });
   }
@@ -303,6 +268,53 @@ class UI {
         ansiEscapes.cursorRestorePosition;
       process.stdout.write(s);
     });
+  }
+
+  _onKeyQuit() {
+    // quit application
+    if (process.stdin instanceof tty.ReadStream) {
+      process.stdin.setRawMode(false);
+    }
+    process.stdout.write(ansiEscapes.cursorShow);
+    this.close();
+    if (this.close_callback) {
+      this.close_callback();
+    }
+  }
+
+  _onKeyPause() {
+    if (this.paused) {
+      this.player.play();
+      this.currentSongFirstReadTimestamp += Date.now() - this.pausedTimestamp;
+      this.paused = false;
+    } else {
+      this.player.pause();
+      this.pausedTimestamp = Date.now();
+      this.paused = true;
+    }
+  }
+
+  _onKeyNumber(n: string) {
+    if (this.currentTrackStringTimeout) {
+      clearTimeout(this.currentTrackStringTimeout);
+      this.currentTrackStringTimeout = undefined;
+    }
+    this.currentTrackString += n;
+    const track = findTrackByTrackString(this.album, this.currentTrackString);
+    if (track > 0) {
+      this.currentTrackString = "";
+      this.currentSongPath = undefined;
+      this.player.goto(track);
+    } else {
+      this.currentTrackStringTimeout = setTimeout(() => {
+        const n = Number(this.currentTrackString);
+        if (n > 0 && n <= this.album.length) {
+          this.currentSongPath = undefined;
+          this.player.goto(n);
+        }
+        this.currentTrackString = "";
+      }, CURRENT_TRACK_STRING_TIMEOUT);
+    }
   }
 }
 
