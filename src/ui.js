@@ -12,8 +12,73 @@ const NativePlayer = require("native-player");
 const INTERVAL = 500;
 const CURRENT_TRACK_STRING_TIMEOUT = 500;
 
+/**
+   * The audio player
+   */
+let player: NativePlayer;
+
+/**
+ * The album currently being played
+ */
+let album: Track[];
+
+/**
+ * A function that will be called when the UI is closed
+ */
+let closeCallback: () => void;
+
+/**
+ * The path to the cover of the track currently being played
+ */
+let currentCoverpath: string;
+
+/**
+ * The timestamp when the first bytes were read from the current song
+ */
+let currentSongFirstReadTimestamp: number = 0;
+
+/**
+ * The duration of the song currently being played
+ */
+let currentSongDuration: number = Number.MAX_VALUE;
+
+/**
+ * The path of the song currently being played
+ */
+let currentSongPath: ?string;
+
+/**
+ * True of the player is paused
+ */
+let paused: boolean;
+
+/**
+ * The timestamp when the player was paused
+ */
+let pausedTimestamp: number;
+
+/**
+ * The ID of the timer that refreshes the UI
+ */
+let timerId: IntervalID;
+
+/**
+ * A string of recently pressed number keys. This string will be used to
+ * jump to a matching track. For example, if the "5" key is pressed, the
+ * player will jump to the fifth song. If "01" has been pressed, it will
+ * jump to the first song, and if "10" has been pressed, to the tenth. The
+ * string will be reset after CURRENT_TRACK_STRING_TIMEOUT ms.
+ */
+let currentTrackString: string = "";
+
+/**
+ * A timer that will reset the current track string and jump to the
+ * specified song if possible
+ */
+let currentTrackStringTimeout: ?TimeoutID;
+
 function findTrack(path: string): ?Track {
-  for (const track of this.album) {
+  for (const track of album) {
     if (track.path === path) {
       return track;
     }
@@ -22,10 +87,10 @@ function findTrack(path: string): ?Track {
 }
 
 function findTrackByTrackString(trackString: string): number {
-  const maxTrackStringLength = Math.floor(Math.log(this.album.length));
+  const maxTrackStringLength = Math.floor(Math.log(album.length));
 
   let result = 0;
-  for (let i = 1; i <= this.album.length; ++i) {
+  for (let i = 1; i <= album.length; ++i) {
     let ts = String(i);
     if (trackString[0] === "0") {
       ts = ts.padStart(maxTrackStringLength, "0");
@@ -56,10 +121,10 @@ function showCover(track: Track) {
     coverpath = path.join(path.dirname(track.path), "cover.jpg");
   }
 
-  if (this.coverpath === coverpath) {
+  if (currentCoverpath === coverpath) {
     return;
   }
-  this.coverpath = coverpath;
+  currentCoverpath = coverpath;
 
   fs.readFile(coverpath, (err, buf) => {
     if (err) {
@@ -78,244 +143,172 @@ function onKeyQuit() {
     process.stdin.setRawMode(false);
   }
   process.stdout.write(ansiEscapes.cursorShow);
-  this.close();
-  if (this.close_callback) {
-    this.close_callback();
+  close();
+  if (closeCallback) {
+    closeCallback();
   }
 }
 
 function onKeyPause() {
-  if (this.paused) {
-    this.player.play();
-    this.currentSongFirstReadTimestamp += Date.now() - this.pausedTimestamp;
-    this.paused = false;
+  if (paused) {
+    player.play();
+    currentSongFirstReadTimestamp += Date.now() - pausedTimestamp;
+    paused = false;
   } else {
-    this.player.pause();
-    this.pausedTimestamp = Date.now();
-    this.paused = true;
+    player.pause();
+    pausedTimestamp = Date.now();
+    paused = true;
   }
 }
 
 function onKeyNumber(n: string) {
-  if (this.currentTrackStringTimeout) {
-    clearTimeout(this.currentTrackStringTimeout);
-    this.currentTrackStringTimeout = undefined;
+  if (currentTrackStringTimeout) {
+    clearTimeout(currentTrackStringTimeout);
+    currentTrackStringTimeout = undefined;
   }
-  this.currentTrackString += n;
-  const track = findTrackByTrackString.call(this, this.currentTrackString);
+  currentTrackString += n;
+  const track = findTrackByTrackString(currentTrackString);
   if (track > 0) {
-    this.currentTrackString = "";
-    this.currentSongPath = undefined;
-    this.player.goto(track);
+    currentTrackString = "";
+    currentSongPath = undefined;
+    player.goto(track);
   } else {
-    this.currentTrackStringTimeout = setTimeout(() => {
-      const n = Number(this.currentTrackString);
-      if (n > 0 && n <= this.album.length) {
-        this.currentSongPath = undefined;
-        this.player.goto(n);
+    currentTrackStringTimeout = setTimeout(() => {
+      const n = Number(currentTrackString);
+      if (n > 0 && n <= album.length) {
+        currentSongPath = undefined;
+        player.goto(n);
       }
-      this.currentTrackString = "";
+      currentTrackString = "";
     }, CURRENT_TRACK_STRING_TIMEOUT);
   }
 }
 
-class UI {
-  /**
-   * The audio player
-   */
-  player: NativePlayer;
+function open(player_: NativePlayer, album_: Track[], closeCallback_: () => void) {
+  player = player_;
+  album = album_;
+  closeCallback = closeCallback_;
 
-  /**
-   * The album currently being played
-   */
-  album: Track[];
-
-  /**
-   * A function that will be called when the UI is closed
-   */
-  close_callback: () => void;
-
-  /**
-   * The path to the cover of the track currently being played
-   */
-  coverpath: string;
-
-  /**
-   * The timestamp when the first bytes were read from the current song
-   */
-  currentSongFirstReadTimestamp: number;
-
-  /**
-   * The duration of the song currently being played
-   */
-  currentSongDuration: number;
-
-  /**
-   * The path of the song currently being played
-   */
-  currentSongPath: ?string;
-
-  /**
-   * True of the player is paused
-   */
-  paused: boolean;
-
-  /**
-   * The timestamp when the player was paused
-   */
-  pausedTimestamp: number;
-
-  /**
-   * The ID of the timer that refreshes the UI
-   */
-  timerId: IntervalID;
-
-  /**
-   * A string of recently pressed number keys. This string will be used to
-   * jump to a matching track. For example, if the "5" key is pressed, the
-   * player will jump to the fifth song. If "01" has been pressed, it will
-   * jump to the first song, and if "10" has been pressed, to the tenth. The
-   * string will be reset after CURRENT_TRACK_STRING_TIMEOUT ms.
-   */
-  currentTrackString: string;
-
-  /**
-   * A timer that will reset the current track string and jump to the
-   * specified song if possible
-   */
-  currentTrackStringTimeout: ?TimeoutID;
-
-  constructor(player: NativePlayer, album: Track[], close_callback: () => void) {
-    this.player = player;
-    this.album = album;
-    this.close_callback = close_callback;
-    this.currentSongFirstReadTimestamp = 0;
-    this.currentSongDuration = Number.MAX_VALUE;
-    this.currentTrackString = "";
+  // make some room for the UI
+  for (let i = 0; i < 11; ++i) {
+    process.stdout.write("\n");
   }
+  process.stdout.write(ansiEscapes.cursorSavePosition + ansiEscapes.cursorHide);
 
-  open() {
-    // make some room for the UI
-    for (let i = 0; i < 11; ++i) {
-      process.stdout.write("\n");
+  // run timer that refreshes UI
+  setTimeout(() => refresh(), INTERVAL / 4);
+  refresh();
+  timerId = setInterval(() => refresh(), INTERVAL);
+
+  // handle keypress events
+  readline.emitKeypressEvents(process.stdin);
+  if (process.stdin instanceof tty.ReadStream) {
+    process.stdin.setRawMode(true);
+  }
+  process.stdin.on("keypress", (ch, key) => {
+    if (key.name === "q") {
+      onKeyQuit();
+    } else if (key.name === "space") {
+      onKeyPause();
+    } else if (key.name === "n" || key.name === "down") {
+      player.next();
+    } else if (key.name === "p" || key.name === "up") {
+      player.prev();
+    } else if (key.name >= "0" && key.name <= "9") {
+      onKeyNumber(key.name);
     }
-    process.stdout.write(ansiEscapes.cursorSavePosition + ansiEscapes.cursorHide);
+  });
+}
 
-    // run timer that refreshes UI
-    setTimeout(() => this.refresh(), INTERVAL / 4);
-    this.refresh();
-    this.timerId = setInterval(() => this.refresh(), INTERVAL);
+function close() {
+  clearInterval(timerId);
+}
 
-    // handle keypress events
-    readline.emitKeypressEvents(process.stdin);
-    if (process.stdin instanceof tty.ReadStream) {
-      process.stdin.setRawMode(true);
-    }
-    process.stdin.on("keypress", (ch, key) => {
-      if (key.name === "q") {
-        onKeyQuit.call(this);
-      } else if (key.name === "space") {
-        onKeyPause.call(this);
-      } else if (key.name === "n" || key.name === "down") {
-        this.player.next();
-      } else if (key.name === "p" || key.name === "up") {
-        this.player.prev();
-      } else if (key.name >= "0" && key.name <= "9") {
-        onKeyNumber.call(this, key.name);
+function refresh() {
+  const song = player.currentSong();
+  if (song && currentSongPath !== song.path) {
+    currentSongPath = song.path;
+    currentSongFirstReadTimestamp = song.firstReadTimestamp || Date.now();
+    currentSongDuration = Number.MAX_VALUE;
+
+    // also set pausedTimestamp to beginning of the song so we get a correct
+    // display if we change songs while we're paused
+    pausedTimestamp = currentSongFirstReadTimestamp;
+
+    let artist = "";
+    let album_name = "";
+    let title = "";
+    let duration = "";
+    let album_info = "";
+
+    const track = findTrack.call(this, currentSongPath);
+    if (track) {
+      showCover.call(this, track);
+      artist = track.artist;
+      album_name = track.album;
+      title = track.title;
+      if (track.track) {
+        title = track.track + ". " + title;
       }
-    });
-  }
-
-  close() {
-    clearInterval(this.timerId);
-  }
-
-  refresh() {
-    const song = this.player.currentSong();
-    if (song && this.currentSongPath !== song.path) {
-      this.currentSongPath = song.path;
-      this.currentSongFirstReadTimestamp = song.firstReadTimestamp || Date.now();
-      this.currentSongDuration = Number.MAX_VALUE;
-
-      // also set pausedTimestamp to beginning of the song so we get a correct
-      // display if we change songs while we're paused
-      this.pausedTimestamp = this.currentSongFirstReadTimestamp;
-
-      let artist = "";
-      let album_name = "";
-      let title = "";
-      let duration = "";
-      let album_info = "";
-
-      const track = findTrack.call(this, this.currentSongPath);
-      if (track) {
-        showCover.call(this, track);
-        artist = track.artist;
-        album_name = track.album;
-        title = track.title;
-        if (track.track) {
-          title = track.track + ". " + title;
-        }
-        if (track.year) {
-          album_name = album_name + " (" + track.year + ")";
-        }
-        if (track.duration) {
-          this.currentSongDuration = track.duration * 1000;
-          duration = "00:00 / " + formatTime(this.currentSongDuration);
-        }
-        album_info = this.album.length + " songs";
-        let album_duration = 0;
-        for (const t of this.album) {
-          if (t.duration) {
-            album_duration += t.duration;
-          } else {
-            album_duration = 0;
-            break;
-          }
-        }
-        if (album_duration > 0) {
-          album_info = album_info + " (" + formatTime(album_duration * 1000) + ")";
+      if (track.year) {
+        album_name = album_name + " (" + track.year + ")";
+      }
+      if (track.duration) {
+        currentSongDuration = track.duration * 1000;
+        duration = "00:00 / " + formatTime(currentSongDuration);
+      }
+      album_info = album.length + " songs";
+      let album_duration = 0;
+      for (const t of album) {
+        if (t.duration) {
+          album_duration += t.duration;
+        } else {
+          album_duration = 0;
+          break;
         }
       }
-
-      const infostr = ansiEscapes.cursorMove(21, -10) +
-        ansiEscapes.eraseEndLine +
-        album_name +
-        ansiEscapes.cursorNextLine +
-        ansiEscapes.cursorMove(21) +
-        ansiEscapes.eraseEndLine +
-        chalk.gray(artist) +
-        ansiEscapes.cursorNextLine +
-        ansiEscapes.cursorNextLine +
-        ansiEscapes.cursorMove(21) +
-        ansiEscapes.eraseEndLine +
-        chalk.bold(title) +
-        ansiEscapes.cursorNextLine +
-        ansiEscapes.cursorNextLine +
-        ansiEscapes.cursorNextLine +
-        ansiEscapes.cursorMove(21) +
-        ansiEscapes.eraseEndLine +
-        duration +
-        ansiEscapes.cursorNextLine +
-        ansiEscapes.cursorNextLine +
-        ansiEscapes.cursorMove(21) +
-        ansiEscapes.eraseEndLine +
-        chalk.gray(album_info) +
-        ansiEscapes.cursorRestorePosition;
-      process.stdout.write(infostr);
+      if (album_duration > 0) {
+        album_info = album_info + " (" + formatTime(album_duration * 1000) + ")";
+      }
     }
 
-    let now = Date.now();
-    if (this.paused) {
-      now = this.pausedTimestamp;
-    }
-    const elapsed = now - this.currentSongFirstReadTimestamp;
-    if (!song.endOfDecode || elapsed < this.currentSongDuration) {
-      const timestr = ansiEscapes.cursorMove(21, -4) +
-        formatTime(elapsed) + ansiEscapes.cursorRestorePosition;
-      process.stdout.write(timestr);
-    }
+    const infostr = ansiEscapes.cursorMove(21, -10) +
+      ansiEscapes.eraseEndLine +
+      album_name +
+      ansiEscapes.cursorNextLine +
+      ansiEscapes.cursorMove(21) +
+      ansiEscapes.eraseEndLine +
+      chalk.gray(artist) +
+      ansiEscapes.cursorNextLine +
+      ansiEscapes.cursorNextLine +
+      ansiEscapes.cursorMove(21) +
+      ansiEscapes.eraseEndLine +
+      chalk.bold(title) +
+      ansiEscapes.cursorNextLine +
+      ansiEscapes.cursorNextLine +
+      ansiEscapes.cursorNextLine +
+      ansiEscapes.cursorMove(21) +
+      ansiEscapes.eraseEndLine +
+      duration +
+      ansiEscapes.cursorNextLine +
+      ansiEscapes.cursorNextLine +
+      ansiEscapes.cursorMove(21) +
+      ansiEscapes.eraseEndLine +
+      chalk.gray(album_info) +
+      ansiEscapes.cursorRestorePosition;
+    process.stdout.write(infostr);
+  }
+
+  let now = Date.now();
+  if (paused) {
+    now = pausedTimestamp;
+  }
+  const elapsed = now - currentSongFirstReadTimestamp;
+  if (!song.endOfDecode || elapsed < currentSongDuration) {
+    const timestr = ansiEscapes.cursorMove(21, -4) +
+      formatTime(elapsed) + ansiEscapes.cursorRestorePosition;
+    process.stdout.write(timestr);
   }
 }
 
-module.exports = UI;
+module.exports = open;

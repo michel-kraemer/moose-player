@@ -7,7 +7,7 @@ const fs = require("fs");
 const lunr = require("lunr");
 const NativePlayer = require("native-player");
 
-const UI = require("./ui");
+const ui = require("./ui");
 
 if (process.argv.length < 3) {
   console.error("Usage: node index.js [query]");
@@ -59,7 +59,6 @@ album.forEach(track => {
 });
 
 // initialize UI
-const ui = new UI(player, album, () => {
+ui(player, album, () => {
   process.exit(0);
 });
-ui.open();
