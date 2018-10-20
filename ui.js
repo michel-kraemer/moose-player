@@ -66,9 +66,9 @@ class UI {
           this.pausedTimestamp = Date.now();
           this.paused = true;
         }
-      } else if (key.name === "n") {
+      } else if (key.name === "n" || key.name === "down") {
         this.player.next();
-      } else if (key.name === "p") {
+      } else if (key.name === "p" || key.name === "up") {
         this.player.prev();
       }
     });
