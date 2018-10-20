@@ -12,6 +12,7 @@
 * Displays cover art (works best on [iTerm2](https://www.iterm2.com))
 * Supports most audio formats (e.g. MP3, OGG, MP4, M4A, FLAC, WAV, AAC)
 * Backed by [ffmpeg](http://ffmpeg.org)/[libav](https://libav.org) and [SDL](https://www.libsdl.org)
+* Gapless playback
 
 ## Installing/Building
 
@@ -25,15 +26,32 @@ Requires `libav` and `libsdl` to be present on your system.
 
 First index your music collection:
 
-    node reindex.js "~/My Music"
+    node lib/reindex.js "~/My Music"
 
 This has only be done once or whenever your music collection has changed.
 
-Then run the player with a [lunr](https://lunrjs.com) to select an album to play:
+Then run the player with a [lunr](https://lunrjs.com) query to select an album to play:
 
-    node index.js "+Kenneth +Retrospect"
+    node lib/index.js "+Kenneth +Retrospect"
 
-Press `q` to exit.
+Press <kbd>q</kbd> to exit.
+
+## Keys
+
+<kbd>q</kbd>  
+&emsp;Quit application
+
+<kbd>Space</kbd>  
+&emsp;Pause/resume playback
+
+<kbd>n</kbd> *or* <kbd>&darr;</kbd>  
+&emsp;Play next song
+
+<kbd>p</kbd> *or* <kbd>&uarr;</kbd>  
+&emsp;Play previous song
+
+<kbd>0</kbd> &hellip; <kbd>9</kbd>  
+&emsp;Jump to the track with the entered number
 
 License
 -------
