@@ -12,8 +12,8 @@ const NativePlayer = require("native-player");
 const INTERVAL = 500;
 const CURRENT_TRACK_STRING_TIMEOUT = 500;
 
-function findTrack(album: Track[], path: string): ?Track {
-  for (const track of album) {
+function findTrack(path: string): ?Track {
+  for (const track of this.album) {
     if (track.path === path) {
       return track;
     }
@@ -21,11 +21,11 @@ function findTrack(album: Track[], path: string): ?Track {
   return undefined;
 }
 
-function findTrackByTrackString(album: Track[], trackString: string): number {
-  const maxTrackStringLength = Math.floor(Math.log(album.length));
+function findTrackByTrackString(trackString: string): number {
+  const maxTrackStringLength = Math.floor(Math.log(this.album.length));
 
   let result = 0;
-  for (let i = 1; i <= album.length; ++i) {
+  for (let i = 1; i <= this.album.length; ++i) {
     let ts = String(i);
     if (trackString[0] === "0") {
       ts = ts.padStart(maxTrackStringLength, "0");
@@ -46,6 +46,77 @@ function formatTime(time: number): string {
   const seconds = time % 60;
   const minutes = Math.floor(time / 60);
   return String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+}
+
+function showCover(track: Track) {
+  let coverpath;
+  if (track.cover) {
+    coverpath = ".database/cover" + track.cover;
+  } else {
+    coverpath = path.join(path.dirname(track.path), "cover.jpg");
+  }
+
+  if (this.coverpath === coverpath) {
+    return;
+  }
+  this.coverpath = coverpath;
+
+  fs.readFile(coverpath, (err, buf) => {
+    if (err) {
+      throw err;
+    }
+    const s = ansiEscapes.cursorMove(0, -10) +
+      ansiEscapes.image(buf, { width: 20 }) +
+      ansiEscapes.cursorRestorePosition;
+    process.stdout.write(s);
+  });
+}
+
+function onKeyQuit() {
+  // quit application
+  if (process.stdin instanceof tty.ReadStream) {
+    process.stdin.setRawMode(false);
+  }
+  process.stdout.write(ansiEscapes.cursorShow);
+  this.close();
+  if (this.close_callback) {
+    this.close_callback();
+  }
+}
+
+function onKeyPause() {
+  if (this.paused) {
+    this.player.play();
+    this.currentSongFirstReadTimestamp += Date.now() - this.pausedTimestamp;
+    this.paused = false;
+  } else {
+    this.player.pause();
+    this.pausedTimestamp = Date.now();
+    this.paused = true;
+  }
+}
+
+function onKeyNumber(n: string) {
+  if (this.currentTrackStringTimeout) {
+    clearTimeout(this.currentTrackStringTimeout);
+    this.currentTrackStringTimeout = undefined;
+  }
+  this.currentTrackString += n;
+  const track = findTrackByTrackString.call(this, this.currentTrackString);
+  if (track > 0) {
+    this.currentTrackString = "";
+    this.currentSongPath = undefined;
+    this.player.goto(track);
+  } else {
+    this.currentTrackStringTimeout = setTimeout(() => {
+      const n = Number(this.currentTrackString);
+      if (n > 0 && n <= this.album.length) {
+        this.currentSongPath = undefined;
+        this.player.goto(n);
+      }
+      this.currentTrackString = "";
+    }, CURRENT_TRACK_STRING_TIMEOUT);
+  }
 }
 
 class UI {
@@ -142,15 +213,15 @@ class UI {
     }
     process.stdin.on("keypress", (ch, key) => {
       if (key.name === "q") {
-        this._onKeyQuit();
+        onKeyQuit.call(this);
       } else if (key.name === "space") {
-        this._onKeyPause();
+        onKeyPause.call(this);
       } else if (key.name === "n" || key.name === "down") {
         this.player.next();
       } else if (key.name === "p" || key.name === "up") {
         this.player.prev();
       } else if (key.name >= "0" && key.name <= "9") {
-        this._onKeyNumber(key.name);
+        onKeyNumber.call(this, key.name);
       }
     });
   }
@@ -176,9 +247,9 @@ class UI {
       let duration = "";
       let album_info = "";
 
-      const track = findTrack(this.album, this.currentSongPath);
+      const track = findTrack.call(this, this.currentSongPath);
       if (track) {
-        this._showCover(track);
+        showCover.call(this, track);
         artist = track.artist;
         album_name = track.album;
         title = track.title;
@@ -243,77 +314,6 @@ class UI {
       const timestr = ansiEscapes.cursorMove(21, -4) +
         formatTime(elapsed) + ansiEscapes.cursorRestorePosition;
       process.stdout.write(timestr);
-    }
-  }
-
-  _showCover(track: Track) {
-    let coverpath;
-    if (track.cover) {
-      coverpath = ".database/cover" + track.cover;
-    } else {
-      coverpath = path.join(path.dirname(track.path), "cover.jpg");
-    }
-
-    if (this.coverpath === coverpath) {
-      return;
-    }
-    this.coverpath = coverpath;
-
-    fs.readFile(coverpath, (err, buf) => {
-      if (err) {
-        throw err;
-      }
-      const s = ansiEscapes.cursorMove(0, -10) +
-        ansiEscapes.image(buf, { width: 20 }) +
-        ansiEscapes.cursorRestorePosition;
-      process.stdout.write(s);
-    });
-  }
-
-  _onKeyQuit() {
-    // quit application
-    if (process.stdin instanceof tty.ReadStream) {
-      process.stdin.setRawMode(false);
-    }
-    process.stdout.write(ansiEscapes.cursorShow);
-    this.close();
-    if (this.close_callback) {
-      this.close_callback();
-    }
-  }
-
-  _onKeyPause() {
-    if (this.paused) {
-      this.player.play();
-      this.currentSongFirstReadTimestamp += Date.now() - this.pausedTimestamp;
-      this.paused = false;
-    } else {
-      this.player.pause();
-      this.pausedTimestamp = Date.now();
-      this.paused = true;
-    }
-  }
-
-  _onKeyNumber(n: string) {
-    if (this.currentTrackStringTimeout) {
-      clearTimeout(this.currentTrackStringTimeout);
-      this.currentTrackStringTimeout = undefined;
-    }
-    this.currentTrackString += n;
-    const track = findTrackByTrackString(this.album, this.currentTrackString);
-    if (track > 0) {
-      this.currentTrackString = "";
-      this.currentSongPath = undefined;
-      this.player.goto(track);
-    } else {
-      this.currentTrackStringTimeout = setTimeout(() => {
-        const n = Number(this.currentTrackString);
-        if (n > 0 && n <= this.album.length) {
-          this.currentSongPath = undefined;
-          this.player.goto(n);
-        }
-        this.currentTrackString = "";
-      }, CURRENT_TRACK_STRING_TIMEOUT);
     }
   }
 }
