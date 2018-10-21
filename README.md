@@ -20,7 +20,8 @@
     cd moose-player
     yarn
 
-Requires `libavformat`, `libswresample` and `libsdl2` to be present on your system.
+Requires `libavformat`, `libswresample` and `libsdl2` to be present on your
+system.
 
 ## Usage
 
@@ -52,6 +53,16 @@ Press <kbd>q</kbd> to exit.
 
 <kbd>0</kbd> &hellip; <kbd>9</kbd>  
 &emsp;Jump to the track with the entered number
+
+Used libraries
+--------------
+
+Moose Player uses the following libraries by dynamically linking to them:
+
+* [Libav](https://libav.org) and [Libswresample](https://www.ffmpeg.org/libswresample.html)
+  licensed under the [LGPLv2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
+* [SDL 2.0](https://www.libsdl.org) distributed under the
+  [zlib license](https://www.zlib.net/zlib_license.html)
 
 License
 -------
