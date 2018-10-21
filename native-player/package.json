@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "native-player.js",
   "author": "Michel Kraemer",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "private": true,
   "gypfile": true,
   "dependencies": {
