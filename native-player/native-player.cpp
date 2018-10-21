@@ -220,7 +220,7 @@ void NativePlayer::Play(const Nan::FunctionCallbackInfo<v8::Value> &info) {
     return;
   }
 
-  SDL_PauseAudio(FALSE);
+  SDL_PauseAudio(0);
 }
 
 void NativePlayer::Pause(const Nan::FunctionCallbackInfo<v8::Value> &info) {
@@ -229,7 +229,7 @@ void NativePlayer::Pause(const Nan::FunctionCallbackInfo<v8::Value> &info) {
     return;
   }
 
-  SDL_PauseAudio(TRUE);
+  SDL_PauseAudio(1);
 }
 
 void NativePlayer::Next(const Nan::FunctionCallbackInfo<v8::Value> &info) {

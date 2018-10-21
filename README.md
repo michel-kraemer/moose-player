@@ -20,7 +20,7 @@
     cd moose-player
     yarn
 
-Requires `libav` and `libsdl` to be present on your system.
+Requires `libavformat`, `libswresample` and `libsdl2` to be present on your system.
 
 ## Usage
 

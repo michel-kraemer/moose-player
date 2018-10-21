@@ -10,7 +10,7 @@
     ],
     "libraries": [
       "-lavformat",
-      "-lsdl2"
+      "-lSDL2"
     ]
   }]
 }

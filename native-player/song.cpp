@@ -3,9 +3,12 @@
 #include <chrono>
 
 void throwError(const char *message, int error) {
+  char e[AV_ERROR_MAX_STRING_SIZE];
+  av_make_error_string(e, AV_ERROR_MAX_STRING_SIZE, error);
+
   std::string msg = message;
   msg += " (error '";
-  msg += av_err2str(error);
+  msg += e;
   msg += "')";
   Nan::ThrowTypeError(msg.c_str());
 }
