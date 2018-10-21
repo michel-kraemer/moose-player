@@ -1,4 +1,4 @@
-# Moose Player [![Apache License, Version 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+# Moose Player [![Apache License, Version 2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0) [![CircleCI](https://circleci.com/gh/michel-kraemer/moose-player/tree/master.svg?style=shield)](https://circleci.com/gh/michel-kraemer/moose-player/tree/master)
 
 > A simplistic console music player
 
